@@ -1,0 +1,63 @@
+package hello.servlet.web.frontcontroller.V3;
+
+import hello.servlet.web.ModelView;
+import hello.servlet.web.frontcontroller.MyView;
+import hello.servlet.web.frontcontroller.V2.Controller.MemberFormControllerV2;
+import hello.servlet.web.frontcontroller.V2.Controller.MemberListControllerVw;
+import hello.servlet.web.frontcontroller.V2.Controller.MemberSaveControllerV2;
+import hello.servlet.web.frontcontroller.V2.ControllerV2;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.NonNull;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+
+@WebServlet(name="frontControllerServlertV3", urlPatterns="/front-controller/v3/*")
+public class FroneControllerServletV3 extends HttpServlet {
+
+    private Map<String, ControllerV3>controllerMap=new HashMap<>();
+
+    public FroneControllerServletV3() {
+        controllerMap.put("/front-controller/v3/members/new-form", new MemberFormControkkerV3());
+        controllerMap.put("/front-controller/v3/members/save",new MemberSaveControllerV3());
+        controllerMap.put("/front-controller/v3/members",new MemberListControllerV3());
+    }
+
+    @Override
+    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+        String requestURI = request.getRequestURI();
+        ControllerV3 controller = controllerMap.get(requestURI);
+
+        if(controller==null){
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write("그런 거 없다 (404 Not Found)");
+            return;
+        }
+
+        Map<String, String> paramMap = CreateParaMap(request);
+
+
+        ModelView mv = controller.process(paramMap);
+        String vieName = mv.getVieName();
+        MyView view= viewResolver(vieName);
+        view.render(mv.getModel(),request, response);
+    }
+
+    private static @NonNull MyView viewResolver(String vieName) {
+        return new MyView("/WEB-INF/views" + vieName + ".jsp");
+    }
+
+    private static @NonNull Map<String, String> CreateParaMap(HttpServletRequest request) {
+        Map<String,String> paramMap=new HashMap<>();
+        request.getParameterNames().asIterator().forEachRemaining(
+                paramNames -> paramMap.put(paramNames, request.getParameter(paramNames)));
+        return paramMap;
+    }
+}
